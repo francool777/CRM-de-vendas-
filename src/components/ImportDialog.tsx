@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { format } from 'date-fns'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import { Upload } from 'lucide-react'
@@ -172,7 +173,12 @@ export function ImportDialog({ open, onOpenChange }: Props) {
                 r[campo.key] = parseEnum(bruto, TEMPERATURAS) ?? 'MORNO'
                 break
               default:
-                r[campo.key] = String(bruto ?? '').trim() || null
+                // se uma coluna de data acabou mapeada num campo de texto (ex: por
+                // engano em Segmento/Plataforma), formata como dd/mm/aaaa em vez do
+                // toString() feio do JS — evita poluir listas globais com lixo
+                r[campo.key] = bruto instanceof Date
+                  ? format(bruto, 'dd/MM/yyyy')
+                  : String(bruto ?? '').trim() || null
             }
           }
           return r
@@ -228,7 +234,11 @@ export function ImportDialog({ open, onOpenChange }: Props) {
             <div className="grid max-h-[50vh] grid-cols-1 gap-2 overflow-y-auto pr-1 scrollbar-thin sm:grid-cols-2">
               {CAMPOS_ALVO.map((campo) => {
                 const colunaEscolhida = mapeamento[campo.key]
-                const amostra = colunaEscolhida ? String(linhas[0]?.[colunaEscolhida] ?? '') : ''
+                const valorBruto = colunaEscolhida ? linhas[0]?.[colunaEscolhida] : undefined
+                const amostra =
+                  valorBruto instanceof Date
+                    ? format(valorBruto, 'dd/MM/yyyy')
+                    : String(valorBruto ?? '')
                 return (
                   <div
                     key={campo.key}

@@ -83,6 +83,13 @@ app.delete('/api/leads', async (req, res) => {
   res.json({ deleted: count })
 })
 
+// Só vira opção global de segmento/plataforma um valor que pareça mesmo um
+// rótulo curto — evita que uma coluna mapeada errado (ex: uma data) polua
+// para sempre o dropdown de todos os leads.
+function pareceRotuloValido(s: string): boolean {
+  return s.length > 0 && s.length <= 40 && !/GMT[+-]\d{4}/.test(s) && !/^\d{4}-\d{2}-\d{2}/.test(s)
+}
+
 // Importação em massa (CSV/Excel) — cria opções de segmento/plataforma novas automaticamente
 app.post('/api/leads/import', async (req, res) => {
   const rows: Record<string, unknown>[] = req.body.rows ?? []
@@ -92,14 +99,14 @@ app.post('/api/leads/import', async (req, res) => {
     if (!data.nomePerfil && !data.linkPerfil) continue
     if (!data.nomePerfil) data.nomePerfil = String(data.linkPerfil)
     if (!data.linkPerfil) data.linkPerfil = ''
-    if (data.segmentoNicho) {
+    if (data.segmentoNicho && pareceRotuloValido(String(data.segmentoNicho))) {
       await prisma.opcaoSegmento.upsert({
         where: { nome: String(data.segmentoNicho) },
         update: {},
         create: { nome: String(data.segmentoNicho) },
       })
     }
-    if (data.plataformaContato) {
+    if (data.plataformaContato && pareceRotuloValido(String(data.plataformaContato))) {
       await prisma.opcaoPlataforma.upsert({
         where: { nome: String(data.plataformaContato) },
         update: {},
@@ -144,6 +151,12 @@ app.post('/api/segmentos', async (req, res) => {
   res.json(seg)
 })
 
+// Remove só a opção da lista de sugestões — não afeta leads que já usam esse valor
+app.delete('/api/segmentos/:id', async (req, res) => {
+  await prisma.opcaoSegmento.delete({ where: { id: Number(req.params.id) } })
+  res.json({ ok: true })
+})
+
 app.get('/api/plataformas', async (_req, res) => {
   res.json(await prisma.opcaoPlataforma.findMany({ orderBy: { nome: 'asc' } }))
 })
@@ -156,6 +169,11 @@ app.post('/api/plataformas', async (req, res) => {
   }
   const plat = await prisma.opcaoPlataforma.upsert({ where: { nome }, update: {}, create: { nome } })
   res.json(plat)
+})
+
+app.delete('/api/plataformas/:id', async (req, res) => {
+  await prisma.opcaoPlataforma.delete({ where: { id: Number(req.params.id) } })
+  res.json({ ok: true })
 })
 
 // ---------- Playbook ----------

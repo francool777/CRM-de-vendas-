@@ -21,7 +21,9 @@ interface DataContextValue {
   deleteLeads: (ids: number[]) => Promise<number>
   importLeads: (rows: Record<string, unknown>[]) => Promise<number>
   addSegmento: (nome: string) => Promise<Opcao>
+  removeSegmento: (id: number) => Promise<void>
   addPlataforma: (nome: string) => Promise<Opcao>
+  removePlataforma: (id: number) => Promise<void>
   addInteracao: (leadId: number, tipo: string, descricao?: string) => Promise<void>
   addCategoria: (nome: string) => Promise<void>
   deleteCategoria: (id: number) => Promise<void>
@@ -104,12 +106,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return seg
   }
 
+  const removeSegmento: DataContextValue['removeSegmento'] = async (id) => {
+    setSegmentos((prev) => prev.filter((s) => s.id !== id))
+    await api.delete(`/api/segmentos/${id}`)
+  }
+
   const addPlataforma: DataContextValue['addPlataforma'] = async (nome) => {
     const plat = await api.post<Opcao>('/api/plataformas', { nome })
     setPlataformas((prev) =>
       prev.some((p) => p.id === plat.id) ? prev : [...prev, plat].sort((a, b) => a.nome.localeCompare(b.nome)),
     )
     return plat
+  }
+
+  const removePlataforma: DataContextValue['removePlataforma'] = async (id) => {
+    setPlataformas((prev) => prev.filter((p) => p.id !== id))
+    await api.delete(`/api/plataformas/${id}`)
   }
 
   const addInteracao: DataContextValue['addInteracao'] = async (leadId, tipo, descricao) => {
@@ -176,7 +188,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         deleteLeads,
         importLeads,
         addSegmento,
+        removeSegmento,
         addPlataforma,
+        removePlataforma,
         addInteracao,
         addCategoria,
         deleteCategoria,
