@@ -207,6 +207,24 @@ app.delete('/api/playbook/scripts/:id', async (req, res) => {
   res.json({ ok: true })
 })
 
-app.listen(PORT, () => {
-  console.log(`API local rodando em http://localhost:${PORT}`)
-})
+// Garante que as opções padrão sempre existam, mesmo que o seed não tenha
+// rodado — assim os dropdowns de plataforma/segmento nunca aparecem vazios.
+const PLATAFORMAS_PADRAO = ['Instagram', 'WhatsApp', 'LinkedIn']
+const SEGMENTOS_PADRAO = ['ODONTO', 'DERMATOLOGIA', 'ESTÉTICA']
+
+async function ensureDefaults() {
+  for (const nome of PLATAFORMAS_PADRAO) {
+    await prisma.opcaoPlataforma.upsert({ where: { nome }, update: {}, create: { nome } })
+  }
+  for (const nome of SEGMENTOS_PADRAO) {
+    await prisma.opcaoSegmento.upsert({ where: { nome }, update: {}, create: { nome } })
+  }
+}
+
+ensureDefaults()
+  .catch((e) => console.error('Falha ao garantir opções padrão:', e))
+  .finally(() => {
+    app.listen(PORT, () => {
+      console.log(`API local rodando em http://localhost:${PORT}`)
+    })
+  })

@@ -21,35 +21,59 @@ interface Props {
   onOpenChange: (open: boolean) => void
 }
 
+// valor especial da opção "+ nova plataforma" no select
+const NOVA_PLATAFORMA = '__nova_plataforma__'
+
 export function NewLeadModal({ open, onOpenChange }: Props) {
-  const { segmentos, plataformas, createLead, addSegmento } = useData()
+  const { segmentos, plataformas, createLead, addSegmento, addPlataforma } = useData()
   const { showToast } = useToast()
 
   const [link, setLink] = useState('')
   const [nomePerfil, setNomePerfil] = useState('')
   const [nomeEditadoManualmente, setNomeEditadoManualmente] = useState(false)
-  const [plataforma, setPlataforma] = useState('IG')
+  const [plataforma, setPlataforma] = useState('')
+  const [novaPlataformaAberta, setNovaPlataformaAberta] = useState(false)
+  const [novaPlataformaNome, setNovaPlataformaNome] = useState('')
   const [segmento, setSegmento] = useState<string | null>(null)
   const [novoSegmentoAberto, setNovoSegmentoAberto] = useState(false)
   const [novoSegmentoNome, setNovoSegmentoNome] = useState('')
   const [salvando, setSalvando] = useState(false)
+
+  // sempre que abrir, seleciona a primeira plataforma disponível por padrão
+  useEffect(() => {
+    if (open && !plataforma && plataformas.length > 0) {
+      setPlataforma(plataformas[0].nome)
+    }
+  }, [open, plataformas, plataforma])
 
   useEffect(() => {
     if (!open) {
       setLink('')
       setNomePerfil('')
       setNomeEditadoManualmente(false)
-      setPlataforma('IG')
+      setPlataforma(plataformas[0]?.nome ?? '')
+      setNovaPlataformaAberta(false)
+      setNovaPlataformaNome('')
       setSegmento(null)
       setNovoSegmentoAberto(false)
       setNovoSegmentoNome('')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // extrai o @usuario automaticamente ao colar o link
   function handleLinkChange(valor: string) {
     setLink(valor)
     if (!nomeEditadoManualmente) setNomePerfil(extractHandle(valor))
+  }
+
+  async function criarNovaPlataforma() {
+    const nome = novaPlataformaNome.trim()
+    if (!nome) return
+    const criada = await addPlataforma(nome)
+    setPlataforma(criada.nome)
+    setNovaPlataformaAberta(false)
+    setNovaPlataformaNome('')
   }
 
   async function criarNovoSegmento() {
@@ -118,13 +142,42 @@ export function NewLeadModal({ open, onOpenChange }: Props) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-charcoal">Plataforma</label>
-              <Select value={plataforma} onChange={(e) => setPlataforma(e.target.value)}>
-                {plataformas.map((p) => (
-                  <option key={p.id} value={p.nome}>
-                    {p.nome}
-                  </option>
-                ))}
-              </Select>
+              {novaPlataformaAberta ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    autoFocus
+                    className="h-9 text-sm"
+                    placeholder="Nova plataforma"
+                    value={novaPlataformaNome}
+                    onChange={(e) => setNovaPlataformaNome(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') criarNovaPlataforma()
+                      if (e.key === 'Escape') setNovaPlataformaAberta(false)
+                    }}
+                  />
+                  <Button size="sm" className="h-9 shrink-0" onClick={criarNovaPlataforma}>
+                    OK
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={plataforma}
+                  onChange={(e) => {
+                    if (e.target.value === NOVA_PLATAFORMA) {
+                      setNovaPlataformaAberta(true)
+                    } else {
+                      setPlataforma(e.target.value)
+                    }
+                  }}
+                >
+                  {plataformas.map((p) => (
+                    <option key={p.id} value={p.nome}>
+                      {p.nome}
+                    </option>
+                  ))}
+                  <option value={NOVA_PLATAFORMA}>+ nova plataforma…</option>
+                </Select>
+              )}
             </div>
           </div>
 

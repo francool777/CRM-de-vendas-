@@ -18,7 +18,7 @@ model Lead {
   id                  Int       @id @default(autoincrement())
   nomePerfil          String    @map("nome_perfil")
   linkPerfil          String    @map("link_perfil")
-  plataformaContato   String    @default("IG") @map("plataforma_contato")
+  plataformaContato   String    @default("Instagram") @map("plataforma_contato")
   segmentoNicho       String?   @map("segmento_nicho")
   dataPrimeiroContato DateTime? @map("data_primeiro_contato")
   followup1Data       DateTime? @map("followup_1_data")

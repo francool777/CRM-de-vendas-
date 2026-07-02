@@ -165,7 +165,7 @@ Te pergunto porque posso te chamar de novo perto dessa data, já com uma propost
 ]
 
 const segmentosIniciais = ['ODONTO', 'DERMATOLOGIA', 'ESTÉTICA']
-const plataformasIniciais = ['IG', 'WhatsApp', 'LinkedIn']
+const plataformasIniciais = ['Instagram', 'WhatsApp', 'LinkedIn']
 
 async function main() {
   for (const nome of segmentosIniciais) {
