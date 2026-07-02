@@ -70,6 +70,19 @@ app.delete('/api/leads/:id', async (req, res) => {
   res.json({ ok: true })
 })
 
+// Exclusão em massa — usada pela seleção múltipla e pelo "excluir todos" na tabela de leads
+app.delete('/api/leads', async (req, res) => {
+  const ids: number[] = Array.isArray(req.body?.ids)
+    ? req.body.ids.map(Number).filter((n: number) => !Number.isNaN(n))
+    : []
+  if (ids.length === 0) {
+    res.status(400).json({ error: 'ids é obrigatório' })
+    return
+  }
+  const { count } = await prisma.lead.deleteMany({ where: { id: { in: ids } } })
+  res.json({ deleted: count })
+})
+
 // Importação em massa (CSV/Excel) — cria opções de segmento/plataforma novas automaticamente
 app.post('/api/leads/import', async (req, res) => {
   const rows: Record<string, unknown>[] = req.body.rows ?? []

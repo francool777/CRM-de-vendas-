@@ -18,6 +18,7 @@ interface DataContextValue {
   }) => Promise<Lead>
   updateLead: (id: number, patch: Partial<Lead>) => Promise<Lead>
   deleteLead: (id: number) => Promise<void>
+  deleteLeads: (ids: number[]) => Promise<number>
   importLeads: (rows: Record<string, unknown>[]) => Promise<number>
   addSegmento: (nome: string) => Promise<Opcao>
   addPlataforma: (nome: string) => Promise<Opcao>
@@ -80,6 +81,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const deleteLead: DataContextValue['deleteLead'] = async (id) => {
     setLeads((prev) => prev.filter((l) => l.id !== id))
     await api.delete(`/api/leads/${id}`)
+  }
+
+  const deleteLeads: DataContextValue['deleteLeads'] = async (ids) => {
+    if (ids.length === 0) return 0
+    setLeads((prev) => prev.filter((l) => !ids.includes(l.id)))
+    const { deleted } = await api.delete<{ deleted: number }>('/api/leads', { ids })
+    return deleted
   }
 
   const importLeads: DataContextValue['importLeads'] = async (rows) => {
@@ -165,6 +173,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         createLead,
         updateLead,
         deleteLead,
+        deleteLeads,
         importLeads,
         addSegmento,
         addPlataforma,

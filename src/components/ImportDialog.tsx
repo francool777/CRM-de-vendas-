@@ -220,26 +220,49 @@ export function ImportDialog({ open, onOpenChange }: Props) {
             <span className="text-xs text-charcoal/60">.csv, .xlsx ou .xls</span>
           </button>
         ) : (
-          <div className="grid max-h-[50vh] grid-cols-1 gap-2 overflow-y-auto pr-1 scrollbar-thin sm:grid-cols-2">
-            {CAMPOS_ALVO.map((campo) => (
-              <div key={campo.key} className="flex items-center justify-between gap-2 rounded-lg border border-dust/60 bg-white/60 px-2 py-1.5">
-                <span className="text-xs font-medium text-charcoal">{campo.label}</span>
-                <Select
-                  className="h-8 w-40 text-xs"
-                  value={mapeamento[campo.key] ?? ''}
-                  onChange={(e) =>
-                    setMapeamento((prev) => ({ ...prev, [campo.key]: e.target.value }))
-                  }
-                >
-                  <option value="">— ignorar —</option>
-                  {colunas.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] text-charcoal/60">
+              Confira o exemplo ao lado de cada campo — se estiver errado, troque a coluna no
+              seletor antes de importar.
+            </p>
+            <div className="grid max-h-[50vh] grid-cols-1 gap-2 overflow-y-auto pr-1 scrollbar-thin sm:grid-cols-2">
+              {CAMPOS_ALVO.map((campo) => {
+                const colunaEscolhida = mapeamento[campo.key]
+                const amostra = colunaEscolhida ? String(linhas[0]?.[colunaEscolhida] ?? '') : ''
+                return (
+                  <div
+                    key={campo.key}
+                    className="flex flex-col gap-1 rounded-lg border border-dust/60 bg-white/60 px-2 py-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-medium text-charcoal">{campo.label}</span>
+                      <Select
+                        className="h-8 w-40 text-xs"
+                        value={colunaEscolhida ?? ''}
+                        onChange={(e) =>
+                          setMapeamento((prev) => ({ ...prev, [campo.key]: e.target.value }))
+                        }
+                      >
+                        <option value="">— ignorar —</option>
+                        {colunas.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    {colunaEscolhida && (
+                      <p className="truncate text-[11px] text-charcoal/60">
+                        ex:{' '}
+                        <span className="font-medium text-ink">
+                          {amostra.trim() ? amostra : '(vazio)'}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
 
