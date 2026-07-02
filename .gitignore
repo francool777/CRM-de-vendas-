@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# banco local (gerado por `npx prisma migrate dev`)
+prisma/dev.db
+prisma/dev.db-journal

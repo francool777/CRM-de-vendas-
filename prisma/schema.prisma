@@ -1,0 +1,90 @@
+// CRM local — SQLite via Prisma (arquivo dev.db salvo no próprio projeto)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// SQLite não suporta enums nativos no Prisma — os campos `status` e
+// `temperatura` são strings validadas na aplicação:
+//   status: LEAD | INTERESSADO | EM_NEGOCIACAO | REUNIAO_AGENDADA |
+//           NAO_RESPONDEU | FECHADO | DESCARTADO
+//   temperatura: FRIO | MORNO | QUENTE
+
+model Lead {
+  id                  Int       @id @default(autoincrement())
+  nomePerfil          String    @map("nome_perfil")
+  linkPerfil          String    @map("link_perfil")
+  plataformaContato   String    @default("IG") @map("plataforma_contato")
+  segmentoNicho       String?   @map("segmento_nicho")
+  dataPrimeiroContato DateTime? @map("data_primeiro_contato")
+  followup1Data       DateTime? @map("followup_1_data")
+  followup2Data       DateTime? @map("followup_2_data")
+  status              String    @default("LEAD")
+  dataReuniao         DateTime? @map("data_reuniao")
+  propostaEnviada     Boolean   @default(false) @map("proposta_enviada")
+  valorProposta       Float?    @map("valor_proposta")
+  temperatura         String    @default("MORNO")
+  observacoes         String?
+  criadoEm            DateTime  @default(now()) @map("criado_em")
+  atualizadoEm        DateTime  @updatedAt @map("atualizado_em")
+
+  interacoes Interacao[]
+
+  @@map("leads")
+}
+
+model OpcaoSegmento {
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  @@map("opcoes_segmento")
+}
+
+model OpcaoPlataforma {
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  @@map("opcoes_plataforma")
+}
+
+model Interacao {
+  id        Int      @id @default(autoincrement())
+  leadId    Int      @map("lead_id")
+  data      DateTime @default(now())
+  // tipo: MENSAGEM_ENVIADA | RESPOSTA_RECEBIDA | REUNIAO | NOTA
+  tipo      String
+  descricao String?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("interacoes")
+}
+
+model PlaybookCategoria {
+  id                 Int     @id @default(autoincrement())
+  nome               String
+  ordem              Int     @default(0)
+  criavelPeloUsuario Boolean @default(true) @map("criavel_pelo_usuario")
+
+  scripts PlaybookScript[]
+
+  @@map("playbook_categorias")
+}
+
+model PlaybookScript {
+  id           Int      @id @default(autoincrement())
+  categoriaId  Int      @map("categoria_id")
+  titulo       String
+  conteudo     String
+  ordem        Int      @default(0)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  categoria PlaybookCategoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@map("playbook_scripts")
+}
