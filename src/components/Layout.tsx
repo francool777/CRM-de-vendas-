@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
+import { Plus, Redo2, Undo2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { NewLeadModal } from '@/components/NewLeadModal'
 import { useData } from '@/store/DataContext'
+import { useUndoRedoShortcuts } from '@/hooks/useUndoRedoShortcuts'
 
 const NAV = [
   { to: '/', label: 'Dashboard' },
@@ -16,7 +17,8 @@ const NAV = [
 
 export function Layout() {
   const [novoLeadAberto, setNovoLeadAberto] = useState(false)
-  const { erro } = useData()
+  const { erro, undo, redo, canUndo, canRedo, undoLabel, redoLabel } = useData()
+  useUndoRedoShortcuts()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -46,6 +48,24 @@ export function Layout() {
                 {item.label}
               </NavLink>
             ))}
+            <div className="ml-2 flex items-center gap-0.5 border-l border-dust/70 pl-2">
+              <button
+                onClick={() => undo()}
+                disabled={!canUndo}
+                title={undoLabel ? `Desfazer: ${undoLabel} (Ctrl+Z)` : 'Nada para desfazer'}
+                className="rounded-lg p-1.5 text-charcoal transition-colors hover:bg-dust/40 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => redo()}
+                disabled={!canRedo}
+                title={redoLabel ? `Refazer: ${redoLabel} (Ctrl+Shift+Z)` : 'Nada para refazer'}
+                className="rounded-lg p-1.5 text-charcoal transition-colors hover:bg-dust/40 hover:text-ink disabled:pointer-events-none disabled:opacity-30"
+              >
+                <Redo2 className="h-4 w-4" />
+              </button>
+            </div>
           </nav>
         </div>
       </header>

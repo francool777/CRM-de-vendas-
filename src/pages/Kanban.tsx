@@ -154,16 +154,18 @@ export function Kanban() {
 
     const patch: Partial<Lead> = { status: novoStatus }
 
-    // 1ª saída da coluna LEAD = 1º contato confirmado → sugere follow-ups
+    // 1ª saída da coluna LEAD = 1º contato confirmado → sugere follow-ups.
+    // A data de 1º contato já vem preenchida desde a criação do lead (padrão =
+    // data de cadastro), então o sinal de "ainda não sugerimos follow-up" é a
+    // ausência das próprias datas de follow-up, não mais a de 1º contato.
     const confirmouPrimeiroContato =
-      lead.status === 'LEAD' && novoStatus !== 'LEAD' && !lead.dataPrimeiroContato
+      lead.status === 'LEAD' && novoStatus !== 'LEAD' && !lead.followup1Data && !lead.followup2Data
     let f1: Date | null = null
     let f2: Date | null = null
     if (confirmouPrimeiroContato) {
       const hoje = new Date()
       f1 = addDays(hoje, 4)
       f2 = addDays(f1, 6)
-      patch.dataPrimeiroContato = hoje.toISOString()
       patch.followup1Data = f1.toISOString()
       patch.followup2Data = f2.toISOString()
     }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
-import { Download, ExternalLink, Search, Trash2, Upload } from 'lucide-react'
+import { Download, ExternalLink, Pencil, Search, Trash2, Upload } from 'lucide-react'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,8 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { TemperatureSelector } from '@/components/TemperatureSelector'
 import { ImportDialog } from '@/components/ImportDialog'
 import { LeadDetailDialog } from '@/components/LeadDetailDialog'
+import { BulkEditDialog } from '@/components/BulkEditDialog'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useData } from '@/store/DataContext'
 import { cn } from '@/lib/utils'
 import { isFollowupOverdue } from '@/lib/leadUtils'
@@ -112,6 +114,9 @@ export function LeadsTable() {
   const [importAberto, setImportAberto] = useState(false)
   const [detalheId, setDetalheId] = useState<number | null>(null)
   const [selecionados, setSelecionados] = useState<Set<number>>(new Set())
+  const [edicaoLoteAberta, setEdicaoLoteAberta] = useState(false)
+  const [confirmarExcluirSelecionados, setConfirmarExcluirSelecionados] = useState(false)
+  const [confirmarExcluirTodos, setConfirmarExcluirTodos] = useState(false)
 
   const filtrados = useMemo(() => {
     return leads.filter((l) => {
@@ -166,17 +171,11 @@ export function LeadsTable() {
   }
 
   async function excluirSelecionados() {
-    const n = selecionados.size
-    if (n === 0) return
-    if (!window.confirm(`Excluir ${n} lead${n === 1 ? '' : 's'} selecionado${n === 1 ? '' : 's'}? Essa ação não pode ser desfeita.`)) return
     await deleteLeads([...selecionados])
     setSelecionados(new Set())
   }
 
   async function excluirTodos() {
-    const n = leads.length
-    if (n === 0) return
-    if (!window.confirm(`Isso vai excluir TODOS os ${n} leads cadastrados (não só os filtrados nesta tela). Essa ação não pode ser desfeita. Continuar?`)) return
     await deleteLeads(leads.map((l) => l.id))
     setSelecionados(new Set())
   }
@@ -227,7 +226,12 @@ export function LeadsTable() {
           <Button variant="outline" size="sm" onClick={exportarCSV}>
             <Download className="h-3.5 w-3.5" /> Exportar CSV
           </Button>
-          <Button variant="danger" size="sm" onClick={excluirTodos} disabled={leads.length === 0}>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => setConfirmarExcluirTodos(true)}
+            disabled={leads.length === 0}
+          >
             <Trash2 className="h-3.5 w-3.5" /> Excluir todos
           </Button>
         </div>
@@ -239,7 +243,10 @@ export function LeadsTable() {
           <span className="text-sm font-medium text-ink">
             {selecionados.size} selecionado{selecionados.size === 1 ? '' : 's'}
           </span>
-          <Button variant="danger" size="sm" onClick={excluirSelecionados}>
+          <Button variant="outline" size="sm" onClick={() => setEdicaoLoteAberta(true)}>
+            <Pencil className="h-3.5 w-3.5" /> Editar selecionados
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => setConfirmarExcluirSelecionados(true)}>
             <Trash2 className="h-3.5 w-3.5" /> Excluir selecionados
           </Button>
           <button
@@ -466,6 +473,28 @@ export function LeadsTable() {
 
       <ImportDialog open={importAberto} onOpenChange={setImportAberto} />
       <LeadDetailDialog lead={leadDetalhe} onClose={() => setDetalheId(null)} />
+      <BulkEditDialog
+        open={edicaoLoteAberta}
+        onOpenChange={setEdicaoLoteAberta}
+        leadIds={[...selecionados]}
+        onDone={() => setSelecionados(new Set())}
+      />
+      <ConfirmDialog
+        open={confirmarExcluirSelecionados}
+        onOpenChange={setConfirmarExcluirSelecionados}
+        title="Excluir leads selecionados?"
+        description={`Isso vai remover permanentemente ${selecionados.size} lead${selecionados.size === 1 ? '' : 's'} selecionado${selecionados.size === 1 ? '' : 's'}. Você pode desfazer com Ctrl+Z logo em seguida.`}
+        confirmLabel="Excluir selecionados"
+        onConfirm={excluirSelecionados}
+      />
+      <ConfirmDialog
+        open={confirmarExcluirTodos}
+        onOpenChange={setConfirmarExcluirTodos}
+        title="Tem certeza de que deseja excluir todos os leads?"
+        description={`Esta ação removerá permanentemente todos os ${leads.length} registros cadastrados (não só os filtrados nesta tela). Você pode desfazer com Ctrl+Z logo em seguida.`}
+        confirmLabel="Excluir todos"
+        onConfirm={excluirTodos}
+      />
     </div>
   )
 }
