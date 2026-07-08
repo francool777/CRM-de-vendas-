@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addDays, format, isSameMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { AlertTriangle, CalendarClock, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Check, CalendarClock, TrendingUp, Users } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -14,16 +14,20 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { LeadDetailDialog } from '@/components/LeadDetailDialog'
 import { useData } from '@/store/DataContext'
-import { isFollowupOverdue, overdueFollowupDate } from '@/lib/leadUtils'
-import { STATUS_LABELS, STATUSES } from '@/lib/types'
+import { useToast } from '@/components/Toast'
+import { camposFollowupVencidos, isFollowupOverdue, overdueFollowupDate } from '@/lib/leadUtils'
+import { STATUS_LABELS, STATUSES, type Lead } from '@/lib/types'
 
 const ORDEM_FUNIL = STATUSES.filter((s) => s !== 'DESCARTADO' && s !== 'NAO_RESPONDEU')
 
 export function Dashboard() {
-  const { leads } = useData()
+  const { leads, updateLead } = useData()
+  const { showToast } = useToast()
   const [detalheId, setDetalheId] = useState<number | null>(null)
+  const [confirmando, setConfirmando] = useState<Set<number>>(new Set())
 
   const agora = new Date()
 
@@ -85,6 +89,41 @@ export function Dashboard() {
   )
 
   const leadDetalhe = detalheId !== null ? (leads.find((l) => l.id === detalheId) ?? null) : null
+
+  // "Confirmar" limpa só a(s) data(s) de follow-up que realmente estão
+  // vencidas neste lead — o usuário define uma nova data quando/se quiser,
+  // pelo Kanban, tabela ou aqui mesmo abrindo o lead.
+  async function confirmarFollowup(lead: Lead) {
+    const campos = camposFollowupVencidos(lead)
+    if (campos.length === 0) return
+    setConfirmando((prev) => new Set(prev).add(lead.id))
+    try {
+      const patch: Partial<Lead> = {}
+      for (const campo of campos) patch[campo] = null
+      await updateLead(lead.id, patch)
+    } finally {
+      setConfirmando((prev) => {
+        const proximo = new Set(prev)
+        proximo.delete(lead.id)
+        return proximo
+      })
+    }
+  }
+
+  async function confirmarTodos() {
+    const alvo = atrasados
+    if (alvo.length === 0) return
+    setConfirmando(new Set(alvo.map((l) => l.id)))
+    try {
+      await Promise.all(alvo.map((l) => confirmarFollowup(l)))
+      showToast({
+        title: `${alvo.length} follow-up${alvo.length === 1 ? '' : 's'} confirmado${alvo.length === 1 ? '' : 's'}!`,
+        description: 'Ctrl+Z desfaz cada um individualmente.',
+      })
+    } finally {
+      setConfirmando(new Set())
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -172,9 +211,20 @@ export function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-paprika" /> Follow-ups atrasados
-              <span className="ml-auto rounded-full bg-paprika/10 px-2 py-0.5 text-xs font-bold text-paprika">
+              <span className="rounded-full bg-paprika/10 px-2 py-0.5 text-xs font-bold text-paprika">
                 {atrasados.length}
               </span>
+              {atrasados.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 text-xs"
+                  onClick={confirmarTodos}
+                  disabled={confirmando.size > 0}
+                >
+                  <Check className="h-3 w-3" /> Confirmar todos
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -188,18 +238,29 @@ export function Dashboard() {
                   const data = overdueFollowupDate(l)
                   return (
                     <li key={l.id}>
-                      <button
-                        onClick={() => setDetalheId(l.id)}
-                        className="flex w-full items-center gap-2 rounded-lg border border-paprika/30 bg-paprika/5 px-3 py-2 text-left transition-colors hover:bg-paprika/10"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
-                          {l.nomePerfil}
-                        </span>
-                        {l.segmentoNicho && <Badge variant="outline">{l.segmentoNicho}</Badge>}
-                        <span className="shrink-0 text-xs font-semibold text-paprika">
-                          desde {data ? format(data, 'dd/MM') : '—'}
-                        </span>
-                      </button>
+                      <div className="flex w-full items-center gap-2 rounded-lg border border-paprika/30 bg-paprika/5 px-3 py-2 transition-colors hover:bg-paprika/10">
+                        <button
+                          onClick={() => setDetalheId(l.id)}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                            {l.nomePerfil}
+                          </span>
+                          {l.segmentoNicho && <Badge variant="outline">{l.segmentoNicho}</Badge>}
+                          <span className="shrink-0 text-xs font-semibold text-paprika">
+                            desde {data ? format(data, 'dd/MM') : '—'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => confirmarFollowup(l)}
+                          disabled={confirmando.has(l.id)}
+                          title="Confirmar follow-up (limpa a data vencida)"
+                          className="flex shrink-0 items-center gap-1 rounded-full bg-paprika px-2 py-1 text-[11px] font-semibold text-cream transition-opacity hover:bg-paprika/90 disabled:opacity-50"
+                        >
+                          <Check className="h-3 w-3" />
+                          {confirmando.has(l.id) ? '…' : 'Confirmar'}
+                        </button>
+                      </div>
                     </li>
                   )
                 })}

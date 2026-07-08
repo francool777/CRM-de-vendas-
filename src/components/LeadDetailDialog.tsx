@@ -41,7 +41,18 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
     )
   }
 
-  const salvarData = (campo: keyof Lead, valor: string) => {
+  // Campo type="date" (yyyy-MM-dd, sem hora): ancora ao meio-dia local antes
+  // de converter para ISO. Sem isso, "new Date('2026-07-15')" é interpretado
+  // como meia-noite em UTC, que em fusos como o do Brasil (UTC-3) já é o dia
+  // anterior — fazendo a data salva "voltar" um dia e o follow-up continuar
+  // aparecendo como vencido mesmo depois de atualizado.
+  const salvarSoData = (campo: keyof Lead, valor: string) => {
+    salvarCampo({ [campo]: valor ? new Date(`${valor}T12:00:00`).toISOString() : null } as Partial<Lead>)
+  }
+
+  // Campo type="datetime-local" (já tem hora própria, sem sufixo de fuso) —
+  // não precisa da âncora acima.
+  const salvarDataHora = (campo: keyof Lead, valor: string) => {
     salvarCampo({ [campo]: valor ? new Date(valor).toISOString() : null } as Partial<Lead>)
   }
 
@@ -132,7 +143,7 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             <Input
               type="date"
               defaultValue={paraInputDate(lead.dataPrimeiroContato)}
-              onBlur={(e) => salvarData('dataPrimeiroContato', e.target.value)}
+              onBlur={(e) => salvarSoData('dataPrimeiroContato', e.target.value)}
             />
           </div>
           <div>
@@ -140,7 +151,7 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             <Input
               type="date"
               defaultValue={paraInputDate(lead.followup1Data)}
-              onBlur={(e) => salvarData('followup1Data', e.target.value)}
+              onBlur={(e) => salvarSoData('followup1Data', e.target.value)}
             />
           </div>
           <div>
@@ -148,7 +159,7 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             <Input
               type="date"
               defaultValue={paraInputDate(lead.followup2Data)}
-              onBlur={(e) => salvarData('followup2Data', e.target.value)}
+              onBlur={(e) => salvarSoData('followup2Data', e.target.value)}
             />
           </div>
           <div>
@@ -156,7 +167,7 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             <Input
               type="datetime-local"
               defaultValue={paraInputDateTime(lead.dataReuniao)}
-              onBlur={(e) => salvarData('dataReuniao', e.target.value)}
+              onBlur={(e) => salvarDataHora('dataReuniao', e.target.value)}
             />
           </div>
           <div className="flex items-end gap-3">

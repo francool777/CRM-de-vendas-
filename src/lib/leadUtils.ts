@@ -38,15 +38,29 @@ export function daysSinceLastContact(lead: Lead): number {
   return differenceInCalendarDays(new Date(), lastContactDate(lead))
 }
 
+function isToday(d: string): boolean {
+  return differenceInCalendarDays(new Date(), new Date(d)) === 0
+}
+
+// Uma data de follow-up individual está vencida?
+export function campoFollowupVencido(d: string | null): boolean {
+  return !!d && isPast(startOfDay(new Date(d))) && !isToday(d)
+}
+
 // Follow-up vencido: data passada e status ainda LEAD / NAO_RESPONDEU
 export function isFollowupOverdue(lead: Lead): boolean {
   if (lead.status !== 'LEAD' && lead.status !== 'NAO_RESPONDEU') return false
-  const vencida = (d: string | null) => !!d && isPast(startOfDay(new Date(d))) && !isToday(d)
-  return vencida(lead.followup1Data) || vencida(lead.followup2Data)
+  return campoFollowupVencido(lead.followup1Data) || campoFollowupVencido(lead.followup2Data)
 }
 
-function isToday(d: string): boolean {
-  return differenceInCalendarDays(new Date(), new Date(d)) === 0
+// Quais campos (followup1Data / followup2Data) estão vencidos neste lead —
+// usado para "confirmar" só o(s) que realmente venceram
+export function camposFollowupVencidos(lead: Lead): Array<'followup1Data' | 'followup2Data'> {
+  if (!isFollowupOverdue(lead)) return []
+  const campos: Array<'followup1Data' | 'followup2Data'> = []
+  if (campoFollowupVencido(lead.followup1Data)) campos.push('followup1Data')
+  if (campoFollowupVencido(lead.followup2Data)) campos.push('followup2Data')
+  return campos
 }
 
 // Qual follow-up está vencido (para exibição nas listas)
