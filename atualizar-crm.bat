@@ -36,6 +36,16 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo.
+echo Atualizando o Prisma Client (gerado a partir do schema)...
+call npx prisma generate
+if errorlevel 1 (
+  echo.
+  echo ERRO ao gerar o Prisma Client. Veja a mensagem acima.
+  pause
+  exit /b 1
+)
+
 call npm run build
 if errorlevel 1 (
   echo.
