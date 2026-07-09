@@ -227,8 +227,8 @@ export function LeadsTable() {
   }
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="flex h-[calc(100vh-8.5rem)] min-h-0 flex-col">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-2xl uppercase tracking-wide text-ink">
           Leads <span className="text-base text-charcoal/60">({filtrados.length})</span>
         </h1>
@@ -252,7 +252,7 @@ export function LeadsTable() {
 
       {/* barra de ações em massa — aparece só quando há seleção */}
       {selecionados.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-paprika/40 bg-paprika/10 px-4 py-2">
+        <div className="mb-4 flex shrink-0 items-center gap-3 rounded-xl border border-paprika/40 bg-paprika/10 px-4 py-2">
           <span className="text-sm font-medium text-ink">
             {selecionados.size} selecionado{selecionados.size === 1 ? '' : 's'}
           </span>
@@ -272,7 +272,7 @@ export function LeadsTable() {
       )}
 
       {/* filtros */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-charcoal/50" />
           <Input
@@ -321,10 +321,10 @@ export function LeadsTable() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-dust/70 bg-white/70 shadow-card scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-dust/70 bg-white/70 shadow-card scrollbar-thin">
         <table className="w-full min-w-[1100px] text-xs">
           <thead>
-            <tr className="border-b border-dust/70 text-left text-[11px] uppercase tracking-wide text-charcoal">
+            <tr className="sticky top-0 z-10 border-b border-dust/70 bg-cream text-left text-[11px] uppercase tracking-wide text-charcoal shadow-[0_1px_0_rgba(64,61,57,0.15)]">
               <th className="px-3 py-2.5">
                 <input
                   ref={checkboxCabecalhoRef}
