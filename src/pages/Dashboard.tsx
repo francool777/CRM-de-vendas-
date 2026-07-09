@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addDays, format, isSameMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { AlertTriangle, Check, CalendarClock, TrendingUp, Users } from 'lucide-react'
+import { AlertTriangle, Check, CalendarClock, ExternalLink, TrendingUp, Users } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -23,8 +23,13 @@ import { STATUS_LABELS, STATUSES, type Lead } from '@/lib/types'
 
 const ORDEM_FUNIL = STATUSES.filter((s) => s !== 'DESCARTADO' && s !== 'NAO_RESPONDEU')
 
+const NOME_CAMPO_FOLLOWUP: Record<'followup1Data' | 'followup2Data', string> = {
+  followup1Data: 'Follow-up 1',
+  followup2Data: 'Follow-up 2',
+}
+
 export function Dashboard() {
-  const { leads, updateLead } = useData()
+  const { leads, updateLead, addInteracao } = useData()
   const { showToast } = useToast()
   const [detalheId, setDetalheId] = useState<number | null>(null)
   const [confirmando, setConfirmando] = useState<Set<number>>(new Set())
@@ -90,17 +95,25 @@ export function Dashboard() {
 
   const leadDetalhe = detalheId !== null ? (leads.find((l) => l.id === detalheId) ?? null) : null
 
-  // "Confirmar" limpa só a(s) data(s) de follow-up que realmente estão
-  // vencidas neste lead — o usuário define uma nova data quando/se quiser,
-  // pelo Kanban, tabela ou aqui mesmo abrindo o lead.
+  // "Confirmar" marca a(s) data(s) de follow-up vencida(s) como HOJE — assim
+  // some da lista de atrasados (hoje não conta como vencido) e, ao mesmo
+  // tempo, fica um registro visível na tabela de Leads de quando o follow-up
+  // 1/2 foi de fato realizado. Também registra no histórico de interações do
+  // lead, pra ter uma linha do tempo permanente mesmo que a data mude depois.
   async function confirmarFollowup(lead: Lead) {
     const campos = camposFollowupVencidos(lead)
     if (campos.length === 0) return
     setConfirmando((prev) => new Set(prev).add(lead.id))
     try {
+      const hoje = new Date().toISOString()
       const patch: Partial<Lead> = {}
-      for (const campo of campos) patch[campo] = null
+      for (const campo of campos) patch[campo] = hoje
       await updateLead(lead.id, patch)
+      await Promise.all(
+        campos.map((campo) =>
+          addInteracao(lead.id, 'NOTA', `${NOME_CAMPO_FOLLOWUP[campo]} confirmado`),
+        ),
+      )
     } finally {
       setConfirmando((prev) => {
         const proximo = new Set(prev)
@@ -118,7 +131,7 @@ export function Dashboard() {
       await Promise.all(alvo.map((l) => confirmarFollowup(l)))
       showToast({
         title: `${alvo.length} follow-up${alvo.length === 1 ? '' : 's'} confirmado${alvo.length === 1 ? '' : 's'}!`,
-        description: 'Ctrl+Z desfaz cada um individualmente.',
+        description: 'A data de hoje já aparece na tabela de Leads. Ctrl+Z desfaz cada um individualmente.',
       })
     } finally {
       setConfirmando(new Set())
@@ -251,10 +264,22 @@ export function Dashboard() {
                             desde {data ? format(data, 'dd/MM') : '—'}
                           </span>
                         </button>
+                        {l.linkPerfil && (
+                          <a
+                            href={l.linkPerfil}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Abrir perfil no Instagram"
+                            className="shrink-0 text-charcoal/50 transition-colors hover:text-paprika"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
                         <button
                           onClick={() => confirmarFollowup(l)}
                           disabled={confirmando.has(l.id)}
-                          title="Confirmar follow-up (limpa a data vencida)"
+                          title="Confirmar follow-up (marca como feito hoje)"
                           className="flex shrink-0 items-center gap-1 rounded-full bg-paprika px-2 py-1 text-[11px] font-semibold text-cream transition-opacity hover:bg-paprika/90 disabled:opacity-50"
                         >
                           <Check className="h-3 w-3" />
