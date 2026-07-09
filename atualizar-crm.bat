@@ -18,6 +18,24 @@ if errorlevel 1 (
   exit /b 1
 )
 
+call npm install
+if errorlevel 1 (
+  echo.
+  echo ERRO ao instalar dependencias. Veja a mensagem acima.
+  pause
+  exit /b 1
+)
+
+echo.
+echo Aplicando mudancas no banco de dados (se houver)...
+call npx prisma migrate deploy
+if errorlevel 1 (
+  echo.
+  echo ERRO ao atualizar o banco de dados. Veja a mensagem acima.
+  pause
+  exit /b 1
+)
+
 call npm run build
 if errorlevel 1 (
   echo.
