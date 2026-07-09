@@ -25,6 +25,7 @@ interface Props {
 const CAMPOS_ALVO = [
   { key: 'nomePerfil', label: 'Nome do perfil', dicas: ['nome', 'perfil', 'usuario', 'handle'] },
   { key: 'linkPerfil', label: 'Link do perfil', dicas: ['link', 'url', 'instagram'] },
+  { key: 'whatsapp', label: 'WhatsApp', dicas: ['whatsapp', 'zap', 'telefone', 'celular', 'fone'] },
   { key: 'plataformaContato', label: 'Plataforma', dicas: ['plataforma'] },
   { key: 'segmentoNicho', label: 'Segmento / nicho', dicas: ['segmento', 'nicho'] },
   { key: 'status', label: 'Status', dicas: ['status', 'etapa', 'fase'] },

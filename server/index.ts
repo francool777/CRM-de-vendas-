@@ -22,6 +22,7 @@ app.use(express.json({ limit: '20mb' }))
 const TEXT_FIELDS = [
   'nomePerfil',
   'linkPerfil',
+  'whatsapp',
   'plataformaContato',
   'segmentoNicho',
   'status',
@@ -46,6 +47,22 @@ function parseLeadBody(body: Record<string, unknown>) {
     const v = body.valorProposta
     data.valorProposta = v === null || v === '' || v === undefined ? null : Number(v)
   }
+
+  // followup1/2Confirmado: se vier explícito no corpo, respeita (é assim que
+  // o botão "Confirmar" do Dashboard marca como resolvido). Se a DATA for
+  // editada sem vir junto com o campo de confirmado, entende-se como um novo
+  // prazo sendo agendado manualmente — e reseta a confirmação para false.
+  if ('followup1Confirmado' in body) {
+    data.followup1Confirmado = Boolean(body.followup1Confirmado)
+  } else if ('followup1Data' in body) {
+    data.followup1Confirmado = false
+  }
+  if ('followup2Confirmado' in body) {
+    data.followup2Confirmado = Boolean(body.followup2Confirmado)
+  } else if ('followup2Data' in body) {
+    data.followup2Confirmado = false
+  }
+
   return data
 }
 
@@ -111,12 +128,15 @@ app.post('/api/leads/restore', async (req, res) => {
         id: Number(l.id),
         nomePerfil: String(l.nomePerfil ?? ''),
         linkPerfil: String(l.linkPerfil ?? ''),
+        whatsapp: l.whatsapp ? String(l.whatsapp) : null,
         plataformaContato: String(l.plataformaContato ?? 'Instagram'),
         segmentoNicho: l.segmentoNicho ? String(l.segmentoNicho) : null,
         status: String(l.status ?? 'LEAD'),
         dataPrimeiroContato: l.dataPrimeiroContato ? new Date(String(l.dataPrimeiroContato)) : null,
         followup1Data: l.followup1Data ? new Date(String(l.followup1Data)) : null,
+        followup1Confirmado: Boolean(l.followup1Confirmado),
         followup2Data: l.followup2Data ? new Date(String(l.followup2Data)) : null,
+        followup2Confirmado: Boolean(l.followup2Confirmado),
         dataReuniao: l.dataReuniao ? new Date(String(l.dataReuniao)) : null,
         propostaEnviada: Boolean(l.propostaEnviada),
         valorProposta: l.valorProposta !== null && l.valorProposta !== undefined ? Number(l.valorProposta) : null,

@@ -59,11 +59,14 @@ export interface Lead {
   id: number
   nomePerfil: string
   linkPerfil: string
+  whatsapp: string | null
   plataformaContato: string
   segmentoNicho: string | null
   dataPrimeiroContato: string | null
   followup1Data: string | null
+  followup1Confirmado: boolean
   followup2Data: string | null
+  followup2Confirmado: boolean
   status: Status
   dataReuniao: string | null
   propostaEnviada: boolean

@@ -42,15 +42,21 @@ function isToday(d: string): boolean {
   return differenceInCalendarDays(new Date(), new Date(d)) === 0
 }
 
-// Uma data de follow-up individual está vencida?
-export function campoFollowupVencido(d: string | null): boolean {
+// Uma data de follow-up individual está vencida? Uma vez "confirmada" pelo
+// botão do Dashboard, nunca mais conta como vencida — mesmo que a data
+// continue no passado — até que a data seja editada manualmente de novo.
+export function campoFollowupVencido(d: string | null, confirmado: boolean): boolean {
+  if (confirmado) return false
   return !!d && isPast(startOfDay(new Date(d))) && !isToday(d)
 }
 
 // Follow-up vencido: data passada e status ainda LEAD / NAO_RESPONDEU
 export function isFollowupOverdue(lead: Lead): boolean {
   if (lead.status !== 'LEAD' && lead.status !== 'NAO_RESPONDEU') return false
-  return campoFollowupVencido(lead.followup1Data) || campoFollowupVencido(lead.followup2Data)
+  return (
+    campoFollowupVencido(lead.followup1Data, lead.followup1Confirmado) ||
+    campoFollowupVencido(lead.followup2Data, lead.followup2Confirmado)
+  )
 }
 
 // Quais campos (followup1Data / followup2Data) estão vencidos neste lead —
@@ -58,19 +64,21 @@ export function isFollowupOverdue(lead: Lead): boolean {
 export function camposFollowupVencidos(lead: Lead): Array<'followup1Data' | 'followup2Data'> {
   if (!isFollowupOverdue(lead)) return []
   const campos: Array<'followup1Data' | 'followup2Data'> = []
-  if (campoFollowupVencido(lead.followup1Data)) campos.push('followup1Data')
-  if (campoFollowupVencido(lead.followup2Data)) campos.push('followup2Data')
+  if (campoFollowupVencido(lead.followup1Data, lead.followup1Confirmado)) campos.push('followup1Data')
+  if (campoFollowupVencido(lead.followup2Data, lead.followup2Confirmado)) campos.push('followup2Data')
   return campos
 }
 
 // Qual follow-up está vencido (para exibição nas listas)
 export function overdueFollowupDate(lead: Lead): Date | null {
-  if (!isFollowupOverdue(lead)) return null
-  const candidatos = [lead.followup1Data, lead.followup2Data]
-    .filter((d): d is string => !!d)
-    .map((d) => new Date(d))
-    .filter((d) => differenceInCalendarDays(new Date(), d) > 0)
-    .sort((a, b) => a.getTime() - b.getTime())
+  const candidatos: Date[] = []
+  if (campoFollowupVencido(lead.followup1Data, lead.followup1Confirmado)) {
+    candidatos.push(new Date(lead.followup1Data as string))
+  }
+  if (campoFollowupVencido(lead.followup2Data, lead.followup2Confirmado)) {
+    candidatos.push(new Date(lead.followup2Data as string))
+  }
+  candidatos.sort((a, b) => a.getTime() - b.getTime())
   return candidatos[0] ?? null
 }
 

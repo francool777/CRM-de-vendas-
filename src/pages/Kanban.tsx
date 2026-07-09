@@ -191,7 +191,7 @@ export function Kanban() {
     return leads.filter((l) => {
       if (busca.trim()) {
         const q = busca.trim().toLowerCase()
-        const alvo = `${l.nomePerfil} ${l.linkPerfil} ${l.segmentoNicho ?? ''} ${l.observacoes ?? ''}`.toLowerCase()
+        const alvo = `${l.nomePerfil} ${l.linkPerfil} ${l.whatsapp ?? ''} ${l.segmentoNicho ?? ''} ${l.observacoes ?? ''}`.toLowerCase()
         if (!alvo.includes(q)) return false
       }
       if (modoSemana) {
@@ -334,7 +334,7 @@ export function Kanban() {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-charcoal/50" />
           <Input
-            placeholder="Buscar por nome, link, observações…"
+            placeholder="Buscar por nome, WhatsApp, link, observações…"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-64 pl-8"

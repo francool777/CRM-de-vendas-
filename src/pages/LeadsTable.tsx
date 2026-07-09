@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
-import { Download, ExternalLink, Pencil, Search, Trash2, Upload } from 'lucide-react'
+import { Check, Download, ExternalLink, Pencil, Search, Trash2, Upload } from 'lucide-react'
 import Papa from 'papaparse'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,9 +70,11 @@ function CelulaTexto({
 function CelulaData({
   valor,
   onSalvar,
+  confirmado,
 }: {
   valor: string | null
   onSalvar: (iso: string | null) => void
+  confirmado?: boolean
 }) {
   const [editando, setEditando] = useState(false)
   if (editando) {
@@ -92,9 +94,14 @@ function CelulaData({
   return (
     <button
       onClick={() => setEditando(true)}
-      className={cn('rounded px-1 py-0.5 tabular-nums hover:bg-dust/30', !valor && 'text-charcoal/40')}
+      title={confirmado ? 'Confirmado — não conta mais como atrasado' : undefined}
+      className={cn(
+        'flex items-center gap-1 rounded px-1 py-0.5 tabular-nums hover:bg-dust/30',
+        !valor && 'text-charcoal/40',
+      )}
     >
       {valor ? format(new Date(valor), 'dd/MM/yy') : '—'}
+      {confirmado && <Check className="h-3 w-3 text-paprika" />}
     </button>
   )
 }
@@ -120,7 +127,12 @@ export function LeadsTable() {
 
   const filtrados = useMemo(() => {
     return leads.filter((l) => {
-      if (busca && !l.nomePerfil.toLowerCase().includes(busca.toLowerCase())) return false
+      if (
+        busca &&
+        !l.nomePerfil.toLowerCase().includes(busca.toLowerCase()) &&
+        !(l.whatsapp ?? '').toLowerCase().includes(busca.toLowerCase())
+      )
+        return false
       if (fStatus && l.status !== fStatus) return false
       if (fSegmento && l.segmentoNicho !== fSegmento) return false
       if (fTemperatura && l.temperatura !== fTemperatura) return false
@@ -187,6 +199,7 @@ export function LeadsTable() {
       filtrados.map((l) => ({
         nome_perfil: l.nomePerfil,
         link_perfil: l.linkPerfil,
+        whatsapp: l.whatsapp ?? '',
         plataforma: l.plataformaContato,
         segmento: l.segmentoNicho ?? '',
         status: l.status,
@@ -263,7 +276,7 @@ export function LeadsTable() {
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-charcoal/50" />
           <Input
-            placeholder="Buscar por nome…"
+            placeholder="Buscar por nome ou WhatsApp…"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-52 pl-8"
@@ -323,6 +336,7 @@ export function LeadsTable() {
                 />
               </th>
               <th className="px-3 py-2.5">Perfil</th>
+              <th className="px-2 py-2.5">WhatsApp</th>
               <th className="px-2 py-2.5">Plataforma</th>
               <th className="px-2 py-2.5">Segmento</th>
               <th className="px-2 py-2.5">Status</th>
@@ -364,6 +378,12 @@ export function LeadsTable() {
                       </a>
                     )}
                   </div>
+                </td>
+                <td className="px-2 py-1.5">
+                  <CelulaTexto
+                    valor={l.whatsapp ?? ''}
+                    onSalvar={(v) => updateLead(l.id, { whatsapp: v.trim() || null })}
+                  />
                 </td>
                 <td className="px-2 py-1.5">
                   <Select
@@ -416,10 +436,18 @@ export function LeadsTable() {
                   <CelulaData valor={l.dataPrimeiroContato} onSalvar={(v) => updateLead(l.id, { dataPrimeiroContato: v })} />
                 </td>
                 <td className="px-2 py-1.5">
-                  <CelulaData valor={l.followup1Data} onSalvar={(v) => updateLead(l.id, { followup1Data: v })} />
+                  <CelulaData
+                    valor={l.followup1Data}
+                    confirmado={l.followup1Confirmado}
+                    onSalvar={(v) => updateLead(l.id, { followup1Data: v })}
+                  />
                 </td>
                 <td className="px-2 py-1.5">
-                  <CelulaData valor={l.followup2Data} onSalvar={(v) => updateLead(l.id, { followup2Data: v })} />
+                  <CelulaData
+                    valor={l.followup2Data}
+                    confirmado={l.followup2Confirmado}
+                    onSalvar={(v) => updateLead(l.id, { followup2Data: v })}
+                  />
                 </td>
                 <td className="px-2 py-1.5 tabular-nums">
                   {l.dataReuniao ? format(new Date(l.dataReuniao), 'dd/MM/yy HH:mm') : '—'}
@@ -462,7 +490,7 @@ export function LeadsTable() {
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={14} className="px-3 py-10 text-center text-sm text-charcoal/60">
+                <td colSpan={15} className="px-3 py-10 text-center text-sm text-charcoal/60">
                   Nenhum lead encontrado. Ajuste os filtros ou cadastre um novo lead.
                 </td>
               </tr>

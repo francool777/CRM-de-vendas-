@@ -95,11 +95,12 @@ export function Dashboard() {
 
   const leadDetalhe = detalheId !== null ? (leads.find((l) => l.id === detalheId) ?? null) : null
 
-  // "Confirmar" marca a(s) data(s) de follow-up vencida(s) como HOJE — assim
-  // some da lista de atrasados (hoje não conta como vencido) e, ao mesmo
-  // tempo, fica um registro visível na tabela de Leads de quando o follow-up
-  // 1/2 foi de fato realizado. Também registra no histórico de interações do
-  // lead, pra ter uma linha do tempo permanente mesmo que a data mude depois.
+  // "Confirmar" marca a(s) data(s) de follow-up vencida(s) como HOJE e sinaliza
+  // "confirmado" — assim some da lista de atrasados PRA SEMPRE (não volta a
+  // alertar amanhã só porque a data ficou no passado de novo), e ainda fica
+  // um registro visível na tabela de Leads de quando o follow-up foi feito.
+  // Editar a data manualmente depois desmarca o "confirmado" automaticamente
+  // (ver server: parseLeadBody), tratando isso como um novo prazo agendado.
   async function confirmarFollowup(lead: Lead) {
     const campos = camposFollowupVencidos(lead)
     if (campos.length === 0) return
@@ -107,7 +108,10 @@ export function Dashboard() {
     try {
       const hoje = new Date().toISOString()
       const patch: Partial<Lead> = {}
-      for (const campo of campos) patch[campo] = hoje
+      for (const campo of campos) {
+        patch[campo] = hoje
+        patch[campo === 'followup1Data' ? 'followup1Confirmado' : 'followup2Confirmado'] = true
+      }
       await updateLead(lead.id, patch)
       await Promise.all(
         campos.map((campo) =>

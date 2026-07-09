@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { BookOpen, Trash2 } from 'lucide-react'
+import { BookOpen, Check, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -99,6 +99,18 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             />
           </div>
           <div>
+            <label className="mb-1 block text-xs font-medium text-charcoal">WhatsApp</label>
+            <Input
+              type="tel"
+              placeholder="(11) 91234-5678"
+              defaultValue={lead.whatsapp ?? ''}
+              onBlur={(e) =>
+                e.target.value !== (lead.whatsapp ?? '') &&
+                salvarCampo({ whatsapp: e.target.value.trim() || null })
+              }
+            />
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium text-charcoal">Status</label>
             <Select
               value={lead.status}
@@ -147,7 +159,14 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-charcoal">Follow-up 1</label>
+            <label className="mb-1 flex items-center gap-1 text-xs font-medium text-charcoal">
+              Follow-up 1
+              {lead.followup1Confirmado && (
+                <span className="flex items-center gap-0.5 rounded-full bg-paprika/10 px-1.5 py-0.5 text-[10px] font-semibold text-paprika" title="Confirmado — não conta mais como atrasado">
+                  <Check className="h-2.5 w-2.5" /> confirmado
+                </span>
+              )}
+            </label>
             <Input
               type="date"
               defaultValue={paraInputDate(lead.followup1Data)}
@@ -155,7 +174,14 @@ export function LeadDetailDialog({ lead, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-charcoal">Follow-up 2</label>
+            <label className="mb-1 flex items-center gap-1 text-xs font-medium text-charcoal">
+              Follow-up 2
+              {lead.followup2Confirmado && (
+                <span className="flex items-center gap-0.5 rounded-full bg-paprika/10 px-1.5 py-0.5 text-[10px] font-semibold text-paprika" title="Confirmado — não conta mais como atrasado">
+                  <Check className="h-2.5 w-2.5" /> confirmado
+                </span>
+              )}
+            </label>
             <Input
               type="date"
               defaultValue={paraInputDate(lead.followup2Data)}
