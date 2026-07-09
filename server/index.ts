@@ -1,10 +1,20 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 const app = express()
-const PORT = 3001
+const PORT = Number(process.env.PORT) || 3001
+
+// Em produção (ex: rodando via PM2 a partir do build compilado), este mesmo
+// processo também serve o frontend já buildado — assim é só 1 processo/porta,
+// sem precisar do Vite dev server separado. Em desenvolvimento (tsx a partir
+// de server/index.ts) isso é um no-op inofensivo, pois o navegador fala com
+// o Vite na porta 5173, nunca diretamente com esta porta.
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const distFrontend = path.resolve(__dirname, '..', 'dist')
 
 app.use(cors())
 app.use(express.json({ limit: '20mb' }))
@@ -294,6 +304,20 @@ app.patch('/api/playbook/scripts/:id', async (req, res) => {
 app.delete('/api/playbook/scripts/:id', async (req, res) => {
   await prisma.playbookScript.delete({ where: { id: Number(req.params.id) } })
   res.json({ ok: true })
+})
+
+// Serve o frontend buildado (dist/) se ele existir — permite rodar tudo num
+// processo só (ex: PM2 em produção). Fica DEPOIS de todas as rotas /api para
+// não interceptá-las.
+app.use(express.static(distFrontend))
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    next()
+    return
+  }
+  res.sendFile(path.join(distFrontend, 'index.html'), (err) => {
+    if (err) next()
+  })
 })
 
 // Garante que as opções padrão sempre existam, mesmo que o seed não tenha
