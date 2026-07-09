@@ -10,6 +10,12 @@ echo   Arthur Franco Design - CRM
 echo   Atualizando e reiniciando o servico PM2...
 echo ============================================
 
+REM Para o servico ANTES de mexer em qualquer arquivo — enquanto ele está
+REM rodando, o Windows mantém o arquivo do Prisma travado e o "prisma
+REM generate" falha com erro EPERM.
+echo Parando o servico para liberar os arquivos...
+pm2 stop crm-vendas-api
+
 git pull origin claude/arthur-franco-crm-wk64mo
 if errorlevel 1 (
   echo.
